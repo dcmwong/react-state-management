@@ -1,6 +1,7 @@
 // @flow
 
 import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
 import logo from './logo.svg';
 import './App.css';
 
@@ -43,12 +44,53 @@ class TripContainer extends Container<MyTripState> {
       this.setState({ messages: [message].concat(this.state.messages) });
     })
   }
+  showModal() {
+    this.setState({ show: !this.state.show });
+  }
   set(name) {
     this.setState({ name: name });
   }
   pushToDb() {
     fire.database().ref('messages').push( this.state.name );
     console.log("saved");
+  }
+}
+
+class TripNameModal extends Component {
+  render() {
+return (
+    <Subscribe to={[TripContainer]}>
+      {myTrip => (
+      <div> 
+        <button onClick={this.props.onClose}>Close</button> 
+	  <input type="text" defaultValue={myTrip.state.name} onChange={e=>myTrip.set(e.target.value)} />
+          <button onClick={() => {myTrip.pushToDb(); this.props.onClose}}>Save to database</button>
+      </div>
+     )}
+    </Subscribe>
+  )
+}
+}
+class Modal extends React.Component {
+  constructor(props) {
+    super(props);
+    this.modalRoot = document.getElementById('modal-root');
+    this.el = document.createElement('div');
+  }
+
+  componentDidMount() {
+    this.modalRoot.appendChild(this.el);
+  }
+
+  componentWillUnmount() {
+    this.modalRoot.removeChild(this.el);
+  }
+
+  render() {
+    return this.props.show ? ReactDOM.createPortal(
+      this.props.children,
+      this.el,
+    ) : null;
   }
 }
 
@@ -62,7 +104,10 @@ function MyTrip() {
 	  </ul>
 	  <input type="text" defaultValue={myTrip.state.name} onChange={e=>myTrip.set(e.target.value)} />
           <button onClick={() => myTrip.pushToDb()}>Save to database</button>
-          <button onClick={() => console.log(myTrip.state.name)}>show</button>
+          <button onClick={() => myTrip.showModal()}>show</button>
+	  <Modal show={myTrip.state.show}>
+	    <TripNameModal onClose={()=>myTrip.showModal()} />
+          </Modal>
         </div>
       )}
     </Subscribe>
